@@ -7,6 +7,28 @@ import cv2
 from tensorflow.keras.utils import to_categorical
 
 
+def preprocess_frame(frame):
+    """
+    Parameters
+    ----------
+    frame
+        cv2 frame
+
+    Returns
+    -------
+    frame
+        preprocessed frame
+    """
+    color_space = cv2.COLOR_BGR2GRAY if USE_GRAY else cv2.COLOR_BGR2RGB
+    channels = 1 if USE_GRAY else 3
+    # reshape and normalize frame
+    new_frame = cv2.cvtColor(frame, color_space)
+    new_frame = cv2.resize(new_frame, (IMAGE_SIZE, IMAGE_SIZE)) / 256.0
+    new_frame = np.reshape(new_frame, (IMAGE_SIZE, IMAGE_SIZE, channels))
+
+    return new_frame
+
+
 def create_dataset(dataset_path: str):
     """
     Parameters
@@ -31,7 +53,7 @@ def create_dataset(dataset_path: str):
             for vid in tqdm(listdir(class_path), desc="Extracting frames from " + f):
                 if vid.endswith(".avi"):
                     video_path = join(class_path, vid)
-                    video_clips = extract_frames(video_path, STRIDE)
+                    video_clips = extract_frames(video_path)
                     clips.extend(video_clips)
                     labels.extend([class_idx for x in range(len(video_clips))])
             class_idx +=1
@@ -40,7 +62,28 @@ def create_dataset(dataset_path: str):
     return np.asarray(clips), to_categorical(np.asarray(labels)), classes
 
 
-def extract_frames(path: str, stride: int = 2) -> list:
+def read_dataset_classes(dataset_path: str):
+    """
+    Parameters
+    ----------
+    dataset_path
+        path to dataset where every sub-folder is a different class
+
+    Returns
+    -------
+    list
+        A list classes
+    """
+    classes = []
+    # iterate through class folders, one folder per class
+    for f in sorted(listdir(dataset_path)):
+        class_path = join(dataset_path, f)
+        if isdir(class_path):
+            classes.append(f)
+    return classes
+
+
+def extract_frames(path: str) -> list:
     """
     Parameters
     ----------
@@ -74,19 +117,8 @@ def extract_frames(path: str, stride: int = 2) -> list:
             break
 
         # do something with temporal stride
-        if idx % stride == 0:
-
-            color_space = cv2.COLOR_BGR2GRAY if USE_GRAY else cv2.COLOR_BGR2RGB
-
-            # reshape and normalize frame
-            gray = cv2.cvtColor(frame, color_space)
-            gray = cv2.resize(gray, (IMAGE_SIZE, IMAGE_SIZE)) / 256.0
-
-            # add frame to clip
-            if USE_GRAY:
-                clip[cnt, :, :, 0] = gray
-            else:
-                clip[cnt, :, :, :] = gray
+        if idx % STRIDE == 0:
+            clip[cnt, :, :, :] = preprocess_frame(frame)
             cnt += 1
             if cnt == BATCH_INPUT_SHAPE:
                 list_clips.append(np.copy(clip))
