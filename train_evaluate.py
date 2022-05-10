@@ -75,6 +75,9 @@ def train_evaluate():
     clips, labels, classes = create_dataset(DATASET_PATH)
     clips_train, clips_test, labels_train, labels_test = train_test_split(clips, labels, test_size=TEST_SIZE,
                                                                           shuffle=True, random_state=seed_constant)
+
+    print("Training clips: " + str(clips_train.shape))
+    print("Testing clips: " + str(clips_test.shape))
     model = get_model(len(classes))
 
     early_stop = EarlyStopping(monitor='val_loss', patience=10, mode='min', restore_best_weights=True)

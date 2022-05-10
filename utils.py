@@ -29,7 +29,7 @@ def create_dataset(dataset_path: str):
         class_path = join(dataset_path, f)
         if isdir(class_path):
             for vid in tqdm(listdir(class_path), desc="Extracting frames from " + f):
-                if vid.endswith(".mp4"):
+                if vid.endswith(".avi"):
                     video_path = join(class_path, vid)
                     video_clips = extract_frames(video_path, STRIDE)
                     clips.extend(video_clips)
@@ -68,7 +68,10 @@ def extract_frames(path: str, stride: int = 2) -> list:
     for idx in range(total_frames):
 
         # read next frame
-        _, frame = vidcap.read()
+        success, frame = vidcap.read()
+
+        if not success:
+            break
 
         # do something with temporal stride
         if idx % stride == 0:
@@ -89,5 +92,4 @@ def extract_frames(path: str, stride: int = 2) -> list:
                 list_clips.append(np.copy(clip))
                 cnt = 0
 
-    vidcap.release()
     return list_clips
