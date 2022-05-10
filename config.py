@@ -8,3 +8,4 @@ USE_GRAY = False
 seed_constant = 27
 STRIDE = 2
 TEST_SIZE = 0.2
+ARCH_TYPE = 0  # 0 for cnn + lstm, 1 for convLSTM

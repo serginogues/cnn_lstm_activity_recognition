@@ -1,71 +1,38 @@
 import random
-from os.path import join
 import numpy as np
 import datetime as dt
 import tensorflow as tf
-from collections import deque
 import matplotlib.pyplot as plt
-from keras.layers import *
-from keras.models import Sequential
 from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
-from config import *
 from utils import create_dataset
+from network import *
 
 np.random.seed(seed_constant)
 random.seed(seed_constant)
 tf.random.set_seed(seed_constant)
 
 
-def get_model(num_classes: int):
+def plot_history(train_history, metric_1: str, metric_2: str):
     """
     Parameters
     ----------
-    num_classes
-        number of classes
-
-    Returns
-    -------
-    model
-        keras model
+    train_history
+        tensorflow model training history
+    metric_1
+        metric to be displayed
+    metric_2
+        metric to be displayed
     """
 
-    # define model
-    model = Sequential()
+    M1 = train_history[metric_1]
+    M2 = train_history[metric_2]
 
-    # 1
-    channels = 1 if USE_GRAY else 3
-    model.add(ConvLSTM2D(filters=4, kernel_size=3, activation='tanh', data_format='channels_last',
-                         recurrent_dropout=0.2, return_sequences=True,
-                         input_shape=(BATCH_INPUT_SHAPE, IMAGE_SIZE, IMAGE_SIZE, channels)))
-    model.add(MaxPool3D(pool_size=(1, 2, 2), padding='same', data_format='channels_last'))
-    model.add(TimeDistributed(Dropout(0.2)))
+    epochs = range(len(M1))
 
-    # 2
-    model.add(ConvLSTM2D(filters=8, kernel_size=3, activation='tanh', data_format='channels_last',
-                         recurrent_dropout=0.2, return_sequences=True))
-    model.add(MaxPool3D(pool_size=(1, 2, 2), padding='same', data_format='channels_last'))
-    model.add(TimeDistributed(Dropout(0.2)))
-
-    # 3
-    model.add(ConvLSTM2D(filters=14, kernel_size=3, activation='tanh', data_format='channels_last',
-                         recurrent_dropout=0.2, return_sequences=True))
-    model.add(MaxPool3D(pool_size=(1, 2, 2), padding='same', data_format='channels_last'))
-    model.add(TimeDistributed(Dropout(0.2)))
-
-    # 4
-    model.add(ConvLSTM2D(filters=16, kernel_size=3, activation='tanh', data_format='channels_last',
-                         recurrent_dropout=0.2, return_sequences=True))
-    model.add(MaxPool3D(pool_size=(1, 2, 2), padding='same', data_format='channels_last'))
-
-    # 5
-    model.add(Flatten())
-    model.add(Dense(num_classes, activation='softmax'))
-
-    # print model
-    model.summary()
-
-    return model
+    plt.plot(epochs, M1, 'blue', label=metric_1)
+    plt.plot(epochs, M2, 'red', label=metric_2)
+    plt.show()
 
 
 def train_evaluate():
@@ -75,12 +42,12 @@ def train_evaluate():
     clips, labels, classes = create_dataset(DATASET_PATH)
     clips_train, clips_test, labels_train, labels_test = train_test_split(clips, labels, test_size=TEST_SIZE,
                                                                           shuffle=True, random_state=seed_constant)
-
     print("Training clips: " + str(clips_train.shape))
     print("Testing clips: " + str(clips_test.shape))
-    model = get_model(len(classes))
 
-    early_stop = EarlyStopping(monitor='val_loss', patience=10, mode='min', restore_best_weights=True)
+    model = create_cnn_lstm(len(classes)) if ARCH_TYPE == 0 else create_conv_lstm(len(classes))
+
+    early_stop = EarlyStopping(monitor='val_loss', patience=15, mode='min', restore_best_weights=True)
 
     model.compile(loss='categorical_crossentropy', optimizer='Adam', metrics=['accuracy'])
 
@@ -91,6 +58,9 @@ def train_evaluate():
 
     model_name = f'model_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}__Loss_{ev_loss}__Accuracy_{ev_acc}.h5'
     model.save('backup/' + model_name)
+
+    plot_history(train_hist, 'loss', 'val_loss')
+    plot_history(evaluate_hist, 'accuracy', 'val_accuracy')
 
 
 if __name__ == '__main__':
