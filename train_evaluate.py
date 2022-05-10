@@ -25,13 +25,14 @@ def plot_history(train_history, metric_1: str, metric_2: str):
         metric to be displayed
     """
 
-    M1 = train_history[metric_1]
-    M2 = train_history[metric_2]
+    M1 = train_history.history[metric_1]
+    M2 = train_history.history[metric_2]
 
     epochs = range(len(M1))
 
     plt.plot(epochs, M1, 'blue', label=metric_1)
     plt.plot(epochs, M2, 'red', label=metric_2)
+    plt.legend()
     plt.show()
 
 
@@ -56,7 +57,9 @@ def train_evaluate():
     evaluate_hist = model.evaluate(clips_test, labels_test)
     ev_loss, ev_acc = evaluate_hist
 
-    model_name = f'model_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}__Loss_{ev_loss}__Accuracy_{ev_acc}.h5'
+    prefix_name = 'cnnlstm' if ARCH_TYPE == 0 else 'convlstm'
+
+    model_name = f'{prefix_name}_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}__Loss_{str(np.round(ev_loss, 2))}__Accuracy_{str(np.round(ev_acc, 2))}.h5'
     model.save('backup/' + model_name)
 
     plot_history(train_hist, 'loss', 'val_loss')
