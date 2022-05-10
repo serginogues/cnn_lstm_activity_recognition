@@ -6,3 +6,5 @@ DATASET_PATH = 'fight-detection-surv-dataset'
 IMAGE_SIZE = 256
 USE_GRAY = False
 seed_constant = 27
+STRIDE = 2
+TEST_SIZE = 0.2

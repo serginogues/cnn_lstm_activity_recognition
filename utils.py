@@ -31,8 +31,9 @@ def create_dataset(dataset_path: str):
             for vid in tqdm(listdir(class_path), desc="Extracting frames from " + f):
                 if vid.endswith(".mp4"):
                     video_path = join(class_path, vid)
-                    clips.extend(extract_frames(video_path))
-                    labels.append(class_idx)
+                    video_clips = extract_frames(video_path, STRIDE)
+                    clips.extend(video_clips)
+                    labels.extend([class_idx for x in range(len(video_clips))])
             class_idx +=1
             classes.append(f)
 

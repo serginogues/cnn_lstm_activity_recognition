@@ -73,7 +73,7 @@ def train_evaluate():
     Train a model and evaluate
     """
     clips, labels, classes = create_dataset(DATASET_PATH)
-    clips_train, clips_test, labels_train, labels_test = train_test_split(clips, labels, test_size=0.2,
+    clips_train, clips_test, labels_train, labels_test = train_test_split(clips, labels, test_size=TEST_SIZE,
                                                                           shuffle=True, random_state=seed_constant)
     model = get_model(len(classes))
 
@@ -81,10 +81,14 @@ def train_evaluate():
 
     model.compile(loss='categorical_crossentropy', optimizer='Adam', metrics=['accuracy'])
 
-    train_hist = model.fit(x=clips_train, y=labels_train, epochs=EPOCHS, batch_size=4,
+    train_hist = model.fit(x=clips_train, y=labels_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
                            shuffle=True, validation_split=0.2, callbacks=[early_stop], verbose=1)
     evaluate_hist = model.evaluate(clips_test, labels_test)
     ev_loss, ev_acc = evaluate_hist
 
     model_name = f'model_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}__Loss_{ev_loss}__Accuracy_{ev_acc}.h5'
     model.save('backup/' + model_name)
+
+
+if __name__ == '__main__':
+    train_evaluate()
