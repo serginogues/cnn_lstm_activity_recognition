@@ -13,7 +13,7 @@ def run_video(path: str):
     """
     VIDEO_PATH = path
     classes = read_dataset_classes(DATASET_PATH)
-    model = create_cnn_lstm(len(classes))
+    model = model = load_model('backup/model.f5')
 
     # begin video capture
     # if the input is the camera, pass 0 instead of the video path
@@ -76,13 +76,9 @@ def run_video(path: str):
     vid.release()
 
 
-def main(config):
-    path = config.path
-    run_video(path)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, help='path to video')
     config = parser.parse_args()
-    main(config)
+    path = config.path
+    run_video(path)
