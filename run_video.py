@@ -13,7 +13,7 @@ def run_video(path: str):
     """
     VIDEO_PATH = path
     classes = read_dataset_classes(DATASET_PATH)
-    model = model = load_model('backup/model.f5')
+    model = load_model('backup/model.f5')
 
     # begin video capture
     # if the input is the camera, pass 0 instead of the video path
