@@ -43,6 +43,7 @@ def run_video(path: str):
             if len(clip) == BATCH_INPUT_SHAPE:
                 model_output = model.predict(np.expand_dims(clip, axis = 0))[0]
                 predicted_label = classes[np.argmax(model_output)]
+                print(predicted_label)
                 clip.pop(0)
 
         cv2.putText(frame, str(predicted_label), (50, 100), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
