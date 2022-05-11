@@ -25,13 +25,8 @@ def run_video(path: str):
     # init display params
     start = time.time()
     counter = 0
-
-    # init video_clip for slowfast
-    channels = 1 if USE_GRAY else 3
-    clip = np.zeros(shape=(BATCH_INPUT_SHAPE, IMAGE_SIZE, IMAGE_SIZE, channels))
-    clip_cnt = 0
-
-    prediction_label = 0
+    clip = []
+    predicted_label = ''
 
     # read frame by frame until video is completed
     while vid.isOpened():
@@ -44,25 +39,13 @@ def run_video(path: str):
         if counter % STRIDE == 0:
 
             new_frame = preprocess_frame(frame)
-            if USE_GRAY:
-                clip[clip_cnt, :, :, 0] = new_frame
-            else:
-                clip[clip_cnt, :, :, :] = new_frame
-
-            clip_cnt += 1
-            if clip_cnt == BATCH_INPUT_SHAPE:
-                model_output = model.predict(np.expand_dims(np.copy(clip), axis = 0))[0]
-                predicted_label = classes[np.argmax(model_output)]
-                clip_cnt = 0
-
-
+            clip.append(new_frame)
             if len(clip) == BATCH_INPUT_SHAPE:
-                cost = evaluate_clip(clip, model)
-                cost_history.append(cost)
-                prediction_label = cost
+                model_output = model.predict(np.expand_dims(clip, axis = 0))[0]
+                predicted_label = classes[np.argmax(model_output)]
                 clip.pop(0)
 
-        cv2.putText(frame, "Cost: " + str(np.round(prediction_label, 2)), (50, 100), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
+        cv2.putText(frame, str(predicted_label), (50, 100), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
 
         # checking video frame rate
         start_time = time.time()

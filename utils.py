@@ -112,9 +112,7 @@ def extract_frames(path: str) -> list:
 
         # read next frame
         success, frame = vidcap.read()
-
-        if not success:
-            break
+        if not success: break
 
         # do something with temporal stride
         if idx % STRIDE == 0:
