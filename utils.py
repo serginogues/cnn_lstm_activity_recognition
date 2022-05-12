@@ -5,6 +5,7 @@ from os.path import join, isdir
 from tqdm import tqdm
 import cv2
 from tensorflow.keras.utils import to_categorical
+import random
 
 
 def preprocess_frame(frame):
@@ -29,12 +30,14 @@ def preprocess_frame(frame):
     return new_frame
 
 
-def create_dataset(dataset_path: str):
+def create_dataset(dataset_path: str, data_aug: bool):
     """
     Parameters
     ----------
     dataset_path
         path to dataset each sub-folder being one class
+    data_aug
+        data augmentation by obtaining frames with different temporal stride
 
     Returns
     -------
@@ -51,13 +54,18 @@ def create_dataset(dataset_path: str):
         class_path = join(dataset_path, f)
         if isdir(class_path):
             for vid in tqdm(listdir(class_path), desc="Extracting frames from " + f):
-                if vid.endswith(".avi"):
+                if vid.endswith(VIDEO_EXTENSION):
                     video_path = join(class_path, vid)
-                    video_clips = extract_frames(video_path)
-                    clips.extend(video_clips)
-                    labels.extend([class_idx for x in range(len(video_clips))])
+
+                    stride_list = [x for x in range(1,3)] if data_aug else [TEMPORAL_STRIDE]
+                    for stride in stride_list:
+                        video_clips = extract_frames(video_path, stride)
+                        clips.extend(video_clips)
+                        labels.extend([class_idx for x in range(len(video_clips))])
             class_idx +=1
             classes.append(f)
+
+    clips, labels = suffle_two_lists(clips, labels)
 
     return np.asarray(clips), to_categorical(np.asarray(labels)), classes
 
@@ -83,7 +91,7 @@ def read_dataset_classes(dataset_path: str):
     return classes
 
 
-def extract_frames(path: str) -> list:
+def extract_frames(path: str, stride: int) -> list:
     """
     Parameters
     ----------
@@ -115,7 +123,7 @@ def extract_frames(path: str) -> list:
         if not success: break
 
         # do something with temporal stride
-        if idx % STRIDE == 0:
+        if idx % stride == 0:
             clip[cnt, :, :, :] = preprocess_frame(frame)
             cnt += 1
             if cnt == BATCH_INPUT_SHAPE:
@@ -123,3 +131,10 @@ def extract_frames(path: str) -> list:
                 cnt = 0
 
     return list_clips
+
+
+def suffle_two_lists(a: list, b: list):
+    c = list(zip(a, b))
+    random.shuffle(c)
+    a, b = zip(*c)
+    return a, b
