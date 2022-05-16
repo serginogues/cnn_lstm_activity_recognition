@@ -1,9 +1,9 @@
 # CUSTOM
 ARCH_TYPE = 0  # 0 for cnn + lstm, 1 for convLSTM
-TEMPORAL_STRIDE = 3
+TEMPORAL_STRIDE = 2
 IMAGE_SIZE = 100  # 256
 DATA_AUGMENTATION = False
-BATCH_INPUT_SHAPE = 10
+BATCH_INPUT_SHAPE = 12
 
 # TRAIN hyperparams
 BATCH_SIZE = 20  # number of training samples per learning iteration
@@ -12,7 +12,8 @@ USE_GRAY = False
 seed_constant = 27
 
 # PATHS
-TRAIN_DATASET = 'data/Real Life Violence Dataset/train'
+TRAIN_DATASET = 'data/HockeyFights/train'
 TEST_DATASET = 'data/test_videos'
-TEST_MODEL_PATH = 'backup/cnnlstm_2022_05_12__16_02_Loss0.66_Acc0.79_Stride3_Size100_DataAUGFalse_BatchS10.h5'
+TEST_MODEL_PATH = 'backup/hockeyFights_cnnlstm_2022_05_12__14_54_Loss0.27_Acc0.92_Stride2_Size100_DataAUGTrue_BatchS12.h5'
 VIDEO_EXTENSION = '.mp4'
+SAVE = False

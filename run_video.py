@@ -9,7 +9,7 @@ from os import listdir
 from os.path import join, isdir
 
 
-def run_video(path: str, classes: list, model):
+def run_video(path: str, classes: list, model, save: bool = True):
     """
     Evaluate video
     """
@@ -22,6 +22,15 @@ def run_video(path: str, classes: list, model):
         vid = cv2.VideoCapture(VIDEO_PATH)
     except:
         vid = cv2.VideoCapture(VIDEO_PATH)
+
+    out = None
+    frame_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    if save:
+        # by default VideoCapture returns float instead of int
+        fps = int(vid.get(cv2.CAP_PROP_FPS))
+        codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # 'XVID'
+        out = cv2.VideoWriter("output.mp4", codec, fps, (frame_width, frame_height))
 
     # init display params
     start = time.time()
@@ -48,7 +57,7 @@ def run_video(path: str, classes: list, model):
                 print(f'Current frame {counter}, Output: {predicted_label} - {probb}')
                 clip.pop(0)
 
-        cv2.putText(frame, str(predicted_label) + ' ' + str(probb), (50, 100), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
+        cv2.putText(frame, str(predicted_label) + ' ' + str(probb), (50, 70), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
 
         # checking video frame rate
         """start_time = time.time()
@@ -57,7 +66,10 @@ def run_video(path: str, classes: list, model):
         cv2.putText(frame, "fps: " + str(fps), (50, 70), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)"""
 
         # show frame
-        cv2.imshow("Output Video", frame)
+        if save:
+            out.write(frame)
+        else:
+            cv2.imshow("Output Video", frame)
 
         # Press Q on keyboard to exit
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -87,7 +99,7 @@ def test_all_videos():
             for vid in listdir(class_path):
                 if vid.endswith(VIDEO_EXTENSION):
                     video_path = join(class_path, vid)
-                    run_video(video_path, classes, model)
+                    run_video(video_path, classes, model, SAVE)
 
 
 if __name__ == '__main__':
