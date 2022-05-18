@@ -41,8 +41,8 @@ def create_dataset(dataset_path: str, data_aug: bool):
 
     Returns
     -------
-    list
-        A list of clips , 10 frames each (10 x 256 x 256 x 1)
+    ndarray
+        An array of clips of shape (BATCH_INPUT_LENGTH x IMAGE_SIZE x IMAGE_SIZE x C)
     """
     labels = []
     clips = []

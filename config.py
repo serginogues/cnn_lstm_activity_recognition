@@ -1,4 +1,4 @@
-# CUSTOM
+# TRAIN
 ARCH_TYPE = 0  # 0 for cnn + lstm, 1 for convLSTM
 ONE_CLIPXVIDEO = True
 BATCH_INPUT_LENGTH = 25
@@ -7,7 +7,6 @@ TEMPORAL_STRIDE = 2
 IMAGE_SIZE = 150  # 256
 DATA_AUGMENTATION = False
 
-# TRAIN hyperparams
 BATCH_SIZE = 10  # number of training samples per learning iteration
 EPOCHS = 50  # number of times the full dataset is seen during training
 USE_GRAY = False
