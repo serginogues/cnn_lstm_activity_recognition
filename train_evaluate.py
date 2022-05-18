@@ -38,7 +38,7 @@ def plot_history(train_history, metric_1: str, metric_2: str):
 
 def train_evaluate():
     """
-    Train a model and evaluate
+    Train A model and evaluate
     """
     clips_train, labels_train, classes = create_dataset(dataset_path=TRAIN_DATASET, data_aug=DATA_AUGMENTATION)
     clips_test, labels_test, _ = create_dataset(dataset_path=TEST_DATASET, data_aug=False)
@@ -51,7 +51,7 @@ def train_evaluate():
 
     model = create_cnn_lstm(len(classes)) if ARCH_TYPE == 0 else create_conv_lstm(len(classes))
 
-    early_stop = EarlyStopping(monitor='accuracy', patience=3, mode='max', restore_best_weights=False)
+    early_stop = EarlyStopping(monitor='loss', patience=5, mode='min', restore_best_weights=True)
 
     model.compile(loss='categorical_crossentropy', optimizer='Adam', metrics=['accuracy'])
     train_hist = model.fit(x=clips_train, y=labels_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
@@ -60,7 +60,7 @@ def train_evaluate():
     ev_loss, ev_acc = evaluate_hist
 
     prefix_name = 'cnnlstm' if ARCH_TYPE == 0 else 'convlstm'
-    model_name = f'{prefix_name}_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}_Loss{str(np.round(ev_loss, 2))}_Acc{str(np.round(ev_acc, 2))}_Stride{str(TEMPORAL_STRIDE)}_Size{str(IMAGE_SIZE)}_DataAUG{str(DATA_AUGMENTATION)}_BatchS{str(BATCH_INPUT_SHAPE)}.h5'
+    model_name = f'{prefix_name}_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}_Loss{str(np.round(ev_loss, 2))}_Acc{str(np.round(ev_acc, 2))}_Stride{str(TEMPORAL_STRIDE)}_Size{str(IMAGE_SIZE)}_DataAUG{str(DATA_AUGMENTATION)}_BatchS{str(BATCH_INPUT_LENGTH)}.h5'
     model.save('backup/' + model_name)
 
     plot_history(train_hist, 'loss', 'accuracy')

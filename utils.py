@@ -54,19 +54,23 @@ def create_dataset(dataset_path: str, data_aug: bool):
         class_path = join(dataset_path, f)
         if isdir(class_path):
             for vid in tqdm(listdir(class_path), desc="Extracting frames from " + f):
-                if vid.endswith(VIDEO_EXTENSION):
+                if vid.endswith(VIDEO_EXTENSION[0]) or vid.endswith(VIDEO_EXTENSION[1]):
                     video_path = join(class_path, vid)
 
-                    stride_list = [x for x in range(1,3)] if data_aug else [TEMPORAL_STRIDE]
-                    for stride in stride_list:
-                        video_clips = extract_frames(video_path, stride)
-                        clips.extend(video_clips)
-                        labels.extend([class_idx for x in range(len(video_clips))])
+                    if ONE_CLIPXVIDEO:
+                        clip = extract_frames_in_one_clip(video_path, BATCH_INPUT_LENGTH)
+                        clips.append(clip)
+                        labels.append(class_idx)
+                    else:
+                        stride_list = [x for x in range(2,4)] if data_aug else [TEMPORAL_STRIDE]
+                        for stride in stride_list:
+                            video_clips = extract_frames_by_stride(video_path, stride)
+                            clips.extend(video_clips)
+                            labels.extend([class_idx for x in range(len(video_clips))])
             class_idx +=1
             classes.append(f)
 
     clips, labels = suffle_two_lists(clips, labels)
-
     return np.asarray(clips), to_categorical(np.asarray(labels)), classes
 
 
@@ -75,7 +79,7 @@ def read_dataset_classes(dataset_path: str):
     Parameters
     ----------
     dataset_path
-        path to dataset where every sub-folder is a different class
+        path to dataset where every sub-folder is A different class
 
     Returns
     -------
@@ -91,7 +95,7 @@ def read_dataset_classes(dataset_path: str):
     return classes
 
 
-def extract_frames(path: str, stride: int) -> list:
+def extract_frames_by_stride(path: str, stride: int) -> list:
     """
     Parameters
     ----------
@@ -106,7 +110,7 @@ def extract_frames(path: str, stride: int) -> list:
     """
 
     channels = 1 if USE_GRAY else 3
-    clip = np.zeros(shape=(BATCH_INPUT_SHAPE, IMAGE_SIZE, IMAGE_SIZE, channels))
+    clip = np.zeros(shape=(BATCH_INPUT_LENGTH, IMAGE_SIZE, IMAGE_SIZE, channels))
 
     # create video capture
     vidcap = cv2.VideoCapture(path)
@@ -126,11 +130,48 @@ def extract_frames(path: str, stride: int) -> list:
         if idx % stride == 0:
             clip[cnt, :, :, :] = preprocess_frame(frame)
             cnt += 1
-            if cnt == BATCH_INPUT_SHAPE:
+            if cnt == BATCH_INPUT_LENGTH:
                 list_clips.append(np.copy(clip))
                 cnt = 0
 
     return list_clips
+
+
+def extract_frames_in_one_clip(path: str, clip_size: int) -> np.ndarray:
+    """
+    Parameters
+    ----------
+    path
+        path to video
+    clip_size
+        number of frames per clip
+    Returns
+    -------
+    list
+        list of clips, (BATCH_INPUT_SHAPE x 256 x 256 x 1)
+    """
+
+    channels = 1 if USE_GRAY else 3
+    clip = np.zeros(shape=(clip_size, IMAGE_SIZE, IMAGE_SIZE, channels))
+
+    # create video capture
+    vidcap = cv2.VideoCapture(path)
+
+    total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+    temporal_stride = max(int(total_frames / clip_size), 1)
+
+    for count in range(clip_size):
+
+        # move video to desired frame given stride
+        vidcap.set(cv2.CAP_PROP_POS_FRAMES, count * temporal_stride)
+
+        # read next frame
+        success, frame = vidcap.read()
+        if not success: break
+
+        clip[count, :, :, :] = preprocess_frame(frame)
+
+    return clip
 
 
 def suffle_two_lists(a: list, b: list):

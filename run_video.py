@@ -50,7 +50,7 @@ def run_video(path: str, classes: list, model, save: bool = True):
 
             new_frame = preprocess_frame(frame)
             clip.append(new_frame)
-            if len(clip) == BATCH_INPUT_SHAPE:
+            if len(clip) == BATCH_INPUT_LENGTH:
                 model_output = model.predict(np.expand_dims(clip, axis = 0))[0]
                 predicted_label = classes[np.argmax(model_output)]
                 probb = round(float(np.max(model_output)), 2)
@@ -93,11 +93,11 @@ def test_all_videos():
     classes = read_dataset_classes(TRAIN_DATASET)
     model = load_model(TEST_MODEL_PATH)
 
-    for f in sorted(listdir(TEST_DATASET)):
-        class_path = join(TEST_DATASET, f)
+    for f in sorted(listdir(RUN_VIDEO_DATASET)):
+        class_path = join(RUN_VIDEO_DATASET, f)
         if isdir(class_path):
             for vid in listdir(class_path):
-                if vid.endswith(VIDEO_EXTENSION):
+                if vid.endswith(VIDEO_EXTENSION[0]) or vid.endswith(VIDEO_EXTENSION[1]):
                     video_path = join(class_path, vid)
                     run_video(video_path, classes, model, SAVE)
 
