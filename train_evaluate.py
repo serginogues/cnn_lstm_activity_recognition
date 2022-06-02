@@ -1,12 +1,10 @@
-import random
-import numpy as np
 import datetime as dt
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from keras.callbacks import EarlyStopping
-from sklearn.model_selection import train_test_split
-from utils import create_dataset
+from keras.utils.layer_utils import count_params
 from network import *
+from dataset_utils import *
 
 np.random.seed(seed_constant)
 random.seed(seed_constant)
@@ -14,17 +12,6 @@ tf.random.set_seed(seed_constant)
 
 
 def plot_history(train_history, metric_1: str, metric_2: str):
-    """
-    Parameters
-    ----------
-    train_history
-        tensorflow model training history
-    metric_1
-        metric to be displayed
-    metric_2
-        metric to be displayed
-    """
-
     M1 = train_history.history[metric_1]
     M2 = train_history.history[metric_2]
 
@@ -36,34 +23,80 @@ def plot_history(train_history, metric_1: str, metric_2: str):
     plt.show()
 
 
-def train_evaluate():
+def train_evaluate(display: bool = False):
     """
     Train A model and evaluate
     """
-    clips_train, labels_train, classes = create_dataset(dataset_path=TRAIN_DATASET, data_aug=DATA_AUGMENTATION)
-    clips_test, labels_test, _ = create_dataset(dataset_path=TEST_DATASET, data_aug=False)
 
-    """clips_train, clips_test, labels_train, labels_test = train_test_split(clips, labels, test_size=TEST_SIZE,
-                                                                          shuffle=True, random_state=seed_constant)"""
+    if TRAIN_DATASET == eDatasets.UCF:
+        clips_train, clips_test, labels_train, labels_test, classes = create_UCF50()
+    elif TRAIN_DATASET == eDatasets.HockeyFights:
+        clips_train, clips_test, labels_train, labels_test, classes = create_HockeyFights()
+    elif TRAIN_DATASET == eDatasets.RealLifeViolence:
+        clips_train, clips_test, labels_train, labels_test, classes = create_RealLifeViolence()
+    elif TRAIN_DATASET == eDatasets.ViolentFlow:
+        clips_train, clips_test, labels_train, labels_test, classes = create_ViolentFlow()
+    else:
+        clips_train, clips_test, labels_train, labels_test, classes = create_UCF50()
 
     print("Training clips: " + str(clips_train.shape))
     print("Testing clips: " + str(clips_test.shape))
 
-    model = create_cnn_lstm(len(classes)) if ARCH_TYPE == 0 else create_conv_lstm(len(classes))
+    for ARCH_TYPE in range(2):
+        model = get_LRCN(len(classes)) if ARCH_TYPE == 0 else get_CNN_BiLSTM(len(classes))
+        prefix_name = 'LRCN' if ARCH_TYPE == 0 else 'CNN_BiLSTM'
 
-    early_stop = EarlyStopping(monitor='loss', patience=5, mode='min', restore_best_weights=True)
+        early_stop = EarlyStopping(monitor='val_accuracy', patience=15, mode='max', restore_best_weights=True)
 
-    model.compile(loss='categorical_crossentropy', optimizer='Adam', metrics=['accuracy'])
-    train_hist = model.fit(x=clips_train, y=labels_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
-                           shuffle=True, callbacks=[early_stop], verbose=1)
-    evaluate_hist = model.evaluate(clips_test, labels_test)
-    ev_loss, ev_acc = evaluate_hist
+        model.compile(loss='categorical_crossentropy',
+                      optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                      metrics=['accuracy'])
+        train_hist = model.fit(x=clips_train, y=labels_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
+                               shuffle=True, callbacks=[early_stop], verbose=1,
+                               validation_data=(clips_test, labels_test))
+        evaluate_hist = model.evaluate(clips_test, labels_test)
+        ev_loss, ev_acc = evaluate_hist
 
-    prefix_name = 'cnnlstm' if ARCH_TYPE == 0 else 'convlstm'
-    model_name = f'{prefix_name}_{dt.datetime.strftime(dt.datetime.now(), "%Y_%m_%d__%H_%M")}_Loss{str(np.round(ev_loss, 2))}_Acc{str(np.round(ev_acc, 2))}_Stride{str(TEMPORAL_STRIDE)}_Size{str(IMAGE_SIZE)}_DataAUG{str(DATA_AUGMENTATION)}_BatchS{str(BATCH_INPUT_LENGTH)}.h5'
-    model.save('backup/' + model_name)
+        LOGS = [str(TRAIN_DATASET).split(".")[1],
+                '_'.join(classes),
+                prefix_name,
+                str(np.round(train_hist.history['loss'][-1], 4)),
+                str(np.round(train_hist.history['accuracy'][-1], 4)),
+                str(np.round(ev_loss, 4)),
+                str(np.round(ev_acc, 4)),
+                str(count_params(model.trainable_weights)),
+                str(len(train_hist.history['loss'])),
+                str(BATCH_SIZE),
+                str(BATCH_INPUT_LENGTH),
+                str(IMAGE_SIZE)]
 
-    plot_history(train_hist, 'loss', 'accuracy')
+        if float(ev_acc) > 0.6:
+            model_name = '_'.join([str(x) for x in LOGS]) + '.h5'
+            model.save('backup/' + model_name)
+            print(model_name)
+
+        text = ' '.join([str(x) for x in LOGS])
+        f = open('results.txt', 'a')
+        f.write('\n')
+        f.write(text)
+        f.close()
+
+        if display:
+            correct = 0
+            for idx, clip in enumerate(clips_test):
+                y_pred = np.argmax(model.predict(np.expand_dims(clip, axis = 0), verbose=0)[0])
+                label = np.argmax(labels_test[idx])
+                if y_pred == label:
+                    correct += 1
+            print("Correct predictions: " + str((correct*100)/len(clips_test)))
+
+            epochs = range(len(train_hist.history['loss']))
+            plt.plot(epochs, train_hist.history['loss'], label='loss')
+            plt.plot(epochs, train_hist.history['val_loss'], label='val_loss')
+            plt.plot(epochs, train_hist.history['accuracy'], label='accuracy')
+            plt.plot(epochs, train_hist.history['val_accuracy'], label='val_accuracy')
+            plt.legend()
+            plt.show()
 
 
 if __name__ == '__main__':

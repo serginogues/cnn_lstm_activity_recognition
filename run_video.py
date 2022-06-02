@@ -1,12 +1,15 @@
-import argparse
 import numpy as np
 from keras.models import load_model
 import cv2
 import time
-from utils import preprocess_frame, read_dataset_classes
+from utils import preprocess_frame
 from network import *
 from os import listdir
 from os.path import join, isdir
+
+
+SAVE = False
+TEST_MODEL_PATH = 'backup/cnnlstm_2022_05_25__11_20_Loss0.25_Acc0.91_Stride2_Size100_DataAUGFalse_BatchS10.h5'
 
 
 def run_video(path: str, classes: list, model, save: bool = True):
@@ -90,16 +93,22 @@ def run_video(path: str, classes: list, model, save: bool = True):
 
 
 def test_all_videos():
-    classes = read_dataset_classes(TRAIN_DATASET)
+    classes = []
+    # iterate through class folders, one folder per class
+    for f in sorted(listdir(TRAIN_DATASET)):
+        class_path = join(TRAIN_DATASET, f)
+        if isdir(class_path):
+            classes.append(f)
+
     model = load_model(TEST_MODEL_PATH)
 
-    for f in sorted(listdir(RUN_VIDEO_DATASET)):
-        class_path = join(RUN_VIDEO_DATASET, f)
+    test_videos_path = 'data/test_videos'
+    for f in sorted(listdir(test_videos_path)):
+        class_path = join(test_videos_path, f)
         if isdir(class_path):
             for vid in listdir(class_path):
-                if vid.endswith(VIDEO_EXTENSION[0]) or vid.endswith(VIDEO_EXTENSION[1]):
-                    video_path = join(class_path, vid)
-                    run_video(video_path, classes, model, SAVE)
+                if vid.endswith(VIDEO_EXTENSION[0]) or vid.endswith(VIDEO_EXTENSION[1]) or vid.endswith(VIDEO_EXTENSION[2]):
+                    run_video(join(class_path, vid), classes, model, SAVE)
 
 
 if __name__ == '__main__':
