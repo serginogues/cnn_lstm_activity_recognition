@@ -4,6 +4,47 @@ import random
 from tensorflow.keras.utils import to_categorical
 
 
+def mainscript_dataset():
+    """
+    Returns
+    -------
+    tuple
+        clips_train, clips_test, labels_train, labels_test, classes
+    """
+    if TRAIN_DATASET == eDatasets.UCF:
+        clips_train, clips_test, labels_train, labels_test, classes = create_UCF50()
+    elif TRAIN_DATASET == eDatasets.HockeyFights:
+        clips_train, clips_test, labels_train, labels_test, classes = create_HockeyFights()
+    elif TRAIN_DATASET == eDatasets.RealLifeViolence:
+        clips_train, clips_test, labels_train, labels_test, classes = create_RealLifeViolence()
+    elif TRAIN_DATASET == eDatasets.ViolentFlow:
+        clips_train, clips_test, labels_train, labels_test, classes = create_ViolentFlow()
+    elif TRAIN_DATASET == eDatasets.Custom:
+        clips_train, clips_test, labels_train, labels_test, classes = create_CustomFights()
+    else:
+        clips_train, clips_test, labels_train, labels_test, classes = create_UCF50()
+
+    print(classes)
+    print("Training clips: " + str(clips_train.shape))
+    print("Testing clips: " + str(clips_test.shape))
+
+    return clips_train, clips_test, labels_train, labels_test, classes
+
+
+def create_CustomFights():
+    """
+    Returns
+    -------
+    arrays
+        clips_train, clips_test, labels_train, labels_test, classes
+    """
+    path = 'C:/Users/azken/Documents/Datasets/Activity Recognition/CustomFights/'
+    clips_train, labels_train, classes = create_dataset(dataset_path=path + 'train', data_aug=False)
+    clips_test, labels_test, _ = create_dataset(dataset_path=path + 'test', data_aug=False)
+
+    return clips_train, clips_test, labels_train, labels_test, classes
+
+
 def create_HockeyFights():
     """
     Returns

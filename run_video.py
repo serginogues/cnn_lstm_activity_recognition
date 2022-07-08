@@ -2,14 +2,14 @@ import numpy as np
 from keras.models import load_model
 import cv2
 import time
-from utils import preprocess_frame
+from utils import preprocess_frame, get_classes
 from network import *
 from os import listdir
 from os.path import join, isdir
 
 
 SAVE = False
-TEST_MODEL_PATH = 'backup/cnnlstm_2022_05_25__11_20_Loss0.25_Acc0.91_Stride2_Size100_DataAUGFalse_BatchS10.h5'
+TEST_MODEL_PATH = 'backup/Custom_fight_noFight_LRCN_0.067_0.9732_0.49_0.7746_589090_14_15_10_256.h5'
 
 
 def run_video(path: str, classes: list, model, save: bool = True):
@@ -26,6 +26,7 @@ def run_video(path: str, classes: list, model, save: bool = True):
     except:
         vid = cv2.VideoCapture(VIDEO_PATH)
 
+    model_output = np.array([0, 0])
     out = None
     frame_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -48,19 +49,20 @@ def run_video(path: str, classes: list, model, save: bool = True):
         ret, frame = vid.read()  # capture frame-by-frame
         if not ret: break
         counter += 1
-
+        cv2.putText(frame, 'Current frame:' + str(counter), (50, 50), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
         if counter % TEMPORAL_STRIDE == 0:
 
             new_frame = preprocess_frame(frame)
             clip.append(new_frame)
             if len(clip) == BATCH_INPUT_LENGTH:
                 model_output = model.predict(np.expand_dims(clip, axis = 0))[0]
-                predicted_label = classes[np.argmax(model_output)]
+                # predicted_label = classes[np.argmax(model_output)]
                 probb = round(float(np.max(model_output)), 2)
-                print(f'Current frame {counter}, Output: {predicted_label} - {probb}')
                 clip.pop(0)
-
-        cv2.putText(frame, str(predicted_label) + ' ' + str(probb), (50, 70), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
+                print(f'Current frame {counter}, Output: {model_output}')
+        for i in range(len(classes)):
+            y_coord = 80 if i == 0 else 110
+            cv2.putText(frame, classes[i] + ': ' + str(round(float(model_output[i]), 2)), (50, y_coord), cv2.FONT_ITALIC, 1, (0, 255, 0), 2)
 
         # checking video frame rate
         """start_time = time.time()
@@ -92,24 +94,9 @@ def run_video(path: str, classes: list, model, save: bool = True):
     vid.release()
 
 
-def test_all_videos():
-    classes = []
-    # iterate through class folders, one folder per class
-    for f in sorted(listdir(TRAIN_DATASET)):
-        class_path = join(TRAIN_DATASET, f)
-        if isdir(class_path):
-            classes.append(f)
-
-    model = load_model(TEST_MODEL_PATH)
-
-    test_videos_path = 'data/test_videos'
-    for f in sorted(listdir(test_videos_path)):
-        class_path = join(test_videos_path, f)
-        if isdir(class_path):
-            for vid in listdir(class_path):
-                if vid.endswith(VIDEO_EXTENSION[0]) or vid.endswith(VIDEO_EXTENSION[1]) or vid.endswith(VIDEO_EXTENSION[2]):
-                    run_video(join(class_path, vid), classes, model, SAVE)
-
-
 if __name__ == '__main__':
-    test_all_videos()
+    path = 'C:/Users/azken/Documents/Datasets/Activity Recognition/fight-detection-surv-dataset/train/noFight/nofi012.mp4'
+    classes = get_classes('C:/Users/azken/Documents/Datasets/Activity Recognition/fight-detection-surv-dataset/train')
+    print(classes)
+    model = load_model(TEST_MODEL_PATH)
+    run_video(path=path, classes=classes, model=model, save=False)

@@ -44,7 +44,7 @@ def create_dataset(dataset_path: str, data_aug: bool):
                             video_clips = extract_frames_by_stride(video_path, stride)
                             clips.extend(video_clips)
                             labels.extend([class_idx for x in range(len(video_clips))])
-            class_idx +=1
+            class_idx += 1
             classes.append(f)
 
     clips, labels = suffle_two_lists(clips, labels)
@@ -73,6 +73,7 @@ def extract_frames_single_clip(path: str, clip_size: int) -> np.ndarray:
 
     total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
     temporal_stride = max(int(total_frames / clip_size), 1)
+    print('temporal stride: ' + str(temporal_stride))
 
     for count in range(clip_size):
 
@@ -159,12 +160,25 @@ def extract_frames_by_stride(path: str, stride: int) -> list:
     return list_clips
 
 
-def visualize_frames(clip: np.ndarray, label: np.ndarray, classes: list):
+def plot_clip(clip: np.ndarray):
     """
     Parameters
     ----------
     clip
-        (BATCH_INPUT_SHAPE x IMG_SIZE x IMG_SIZE x C)
+        numpy array of shape (BATCH_INPUT_SHAPE x IMG_SIZE x IMG_SIZE x C)
     """
-    numpy_horizontal = np.hstack((clip[0], clip[2], clip[4]))
-    cv2.imshow(classes[np.argmax(label)], numpy_horizontal)
+    cv2.imshow(' ', np.hstack(clip))
+    cv2.waitKey(0)
+
+
+def get_classes(dataset_path) -> list:
+    """
+    It is expected that the dataset_path contains no more than one folder per class
+    """
+    classes = []
+    # iterate through class folders, one folder per class
+    for f in sorted(listdir(dataset_path)):
+        class_path = join(dataset_path, f)
+        if isdir(class_path):
+            classes.append(f)
+    return classes
